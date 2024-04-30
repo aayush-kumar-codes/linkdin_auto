@@ -1,45 +1,80 @@
+import os
 from selenium import webdriver
-from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+from slack_sdk import WebClient
+from dotenv import load_dotenv
+from slack_sdk.errors import SlackApiError
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
-driver = webdriver.Chrome()
-# Navigate to the LinkedIn login page
-driver.get("https://www.linkedin.com/login")
-# Wait for the login form to be present
-login_form = WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.ID, "username"))
-)
-# Enter the username or email
-username_field = driver.find_element(By.ID, "username")
-username_field.send_keys("saurabh.excel2011@gmail.com")
-# Enter the password
-password_field = driver.find_element(By.ID, "password")
-password_field.send_keys("linkedin@123#")
-# Submit the login form
-login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
-login_button.click()
-time.sleep(10)
-search_url = "https://www.linkedin.com/search/results/content/?keywords=react%20remote%20jobs&origin=FACETED_SEARCH&searchId=e3dd1918-35dd-44ce-9371-bab3052f551c&sid=Xra&sortBy=%22date_posted%22"
-driver.get(search_url)
-scroll_pause_time = 5
-screen_height = driver.execute_script("return window.screen.height;")
-i = 1
-urls = []
-while True:
-    driver.execute_script(f"window.scrollTo(0, {screen_height * i});")
-    i += 1
-    time.sleep(scroll_pause_time)
-    # soup = BeautifulSoup(driver.page_source, "html.parser")
-    post_urn = driver.find_element(By.XPATH, "//div[@role='region]")
-    # for urn in post_urn:
-    url = f"https://www.linkedin.com/feed/update/{post_urn['data-urn']}/"
-    urls.append(url)
-    '''scroll_height = \
-        driver.execute_script("return document.body.scrollHeight;")'''
-    if len[urls] > 100:
-        break
-print(urls)
-driver.quit()
+load_dotenv()
+
+
+def scrap_post_urn():
+    driver = webdriver.Chrome()
+
+    driver.get("https://www.linkedin.com/login")
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "username"))
+    )
+
+    username_field = driver.find_element(By.ID, "username")
+    username_field.send_keys("saurabh.excel2011@gmail.com")
+
+    password_field = driver.find_element(By.ID, "password")
+    password_field.send_keys("linkedin@123#")
+
+    login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
+    login_button.click()
+
+    WebDriverWait(driver, 10).until(EC.visibility_of_element_located((
+        By.XPATH,
+        "//input[@role='combobox']")))
+
+    search_url = "https://www.linkedin.com/search/results/content/?keywords=react%20remote%20jobs&origin=FACETED_SEARCH&searchId=e3dd1918-35dd-44ce-9371-bab3052f551c&sid=Xra&sortBy=%22date_posted%22"
+    driver.get(search_url)
+
+    time.sleep(5)
+
+    scroll_count = 0
+    while scroll_count < 50:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(5)
+        scroll_count += 1
+
+    post_elements = driver.find_elements(By.XPATH, "//div[@role='region']")
+
+    post_urns = []
+    for post_element in post_elements[:100]:
+        post_urn = post_element.get_attribute("data-urn")
+        if post_urn:
+            post_urns.append(post_urn)
+    driver.quit()
+    return post_urns
+
+
+def post_content(url):
+    driver = webdriver.Chrome()
+    driver.get(url)
+    time.sleep(3)
+    post_content = driver.find_element(By.XPATH, "//p[@data-test-id='main-feed-activity-card__commentary']").text
+    slack_token = os.getenv("SLACK_BOT_TOKEN")
+    client = WebClient(token=slack_token)
+    try:
+        response = client.chat_postMessage(
+            channel=os.getenv("SLACK_CHANNEL"),
+            text=post_content,
+            user=os.getenv("USER")
+        )
+    except SlackApiError as e:
+        assert e.response["error"]
+
+
+post_urn = scrap_post_urn()
+for urn in post_urn:
+    link = f"https://www.linkedin.com/feed/update/{urn}/"
+    post_content(link)
+    time.sleep(5)
