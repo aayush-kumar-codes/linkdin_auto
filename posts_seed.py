@@ -47,7 +47,14 @@ def post_content(url, driver):
     driver.get(url)
     print(url)
     time.sleep(10)
-    post_content = driver.find_element(By.XPATH, "//p[@data-test-id='main-feed-activity-card__commentary']").text
+
+    post_content_loaded = WebDriverWait(driver, 20).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "feed-shared-update-v2__description"))
+    )
+    post_content_element = driver.find_element(By.CLASS_NAME, "feed-shared-update-v2__description")
+
+    post_content = post_content_element.text
+
     slack_token = os.getenv("SLACK_BOT_TOKEN")
     client = WebClient(token=slack_token)
 
