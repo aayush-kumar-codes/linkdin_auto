@@ -35,10 +35,10 @@ class Command(BaseCommand):
         )
 
         username_field = driver.find_element(By.ID, "username")
-        username_field.send_keys("saurabh.excel2011@gmail.com")
+        username_field.send_keys(os.getenv("LOGIN_USERNAME"))
 
         password_field = driver.find_element(By.ID, "password")
-        password_field.send_keys("linkedin@123#")
+        password_field.send_keys(os.getenv("LOGIN_PASSWORD"))
 
         login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
         login_button.click()
@@ -51,7 +51,7 @@ class Command(BaseCommand):
         search_url = "https://www.linkedin.com/search/results/content/?keywords=react%20remote%20jobs&origin=FACETED_SEARCH&searchId=e3dd1918-35dd-44ce-9371-bab3052f551c&sid=Xra&sortBy=%22date_posted%22"
         driver.get(search_url)
 
-        for _ in range(10):
+        for _ in range(20):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(2)
 
@@ -83,33 +83,28 @@ class Command(BaseCommand):
         linkedinprofile_link = list(set([linkedin.get_attribute("href") for linkedin in linkedinprofile if linkedin.get_attribute("href")]))
         linkedin_link = linkedinprofile_link[0]
         post_content = post_content_element.text
-        # lines = post_content.split('\n')
         cleaned_content = re.sub(r'#\w+', '', post_content)
         final_content = re.sub(r'hashtag', '', cleaned_content)
         final_content_remove = re.sub(r',\w+', '', final_content)
         content = "".join([s for s in final_content_remove.strip().splitlines(True) if s.strip()])
-        print(content)
         email = self.extract_email(post_content)
         skills = set(self.extract_skills(post_content))
-        print("------")
-        print(email)
-        
         string_list = [str(element) for element in skills]
         delimiter = ", "
         result_string = delimiter.join(string_list)
-        print("------")
-        print(result_string)
-        print("------")
-        print(linkedin_link)
-
-        linkedinjobs, created = LinkedInJobs.objects.get_or_create(
-                                email=email,
-                                skills=result_string,
-                                linkedin_profile_link=linkedinprofile_link[0],
-                                post_profile=url,
-                                post_content=content,
-                                urn_id=urn
-                            )
+        try:
+            linkedinjobs = LinkedInJobs.objects.get(urn_id=urn)
+        except LinkedInJobs.DoesNotExist:
+            linkedinjobs = None
+        if not linkedinjobs:
+            linkedinjobs, created = LinkedInJobs.objects.get_or_create(
+                                    email=email,
+                                    skills=result_string,
+                                    linkedin_profile_link=linkedinprofile_link[0],
+                                    post_profile=url,
+                                    post_content=content,
+                                    urn_id=urn
+                                )
 
         '''slack_token = os.getenv("SLACK_BOT_TOKEN")
         client = WebClient(token=slack_token)
