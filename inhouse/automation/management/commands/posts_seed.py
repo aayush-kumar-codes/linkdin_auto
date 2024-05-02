@@ -90,7 +90,7 @@ class Command(BaseCommand):
         content = "".join([s for s in final_content_remove.strip().splitlines(True) if s.strip()])
         print(content)
         email = self.extract_email(post_content)
-        skills = self.extract_skills(post_content)
+        skills = set(self.extract_skills(post_content))
         print("------")
         print(email)
         
