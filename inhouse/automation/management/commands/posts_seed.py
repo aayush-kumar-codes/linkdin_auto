@@ -106,7 +106,7 @@ class Command(BaseCommand):
                                     urn_id=urn
                                 )
 
-        '''slack_token = os.getenv("SLACK_BOT_TOKEN")
+        slack_token = os.getenv("SLACK_BOT_TOKEN")
         client = WebClient(token=slack_token)
 
         try:
@@ -116,4 +116,4 @@ class Command(BaseCommand):
                 user=os.getenv("USER")
             )
         except SlackApiError as e:
-            logging.error(f"Error posting to Slack: {e.response['error']}")'''
+            logging.error(f"Error posting to Slack: {e.response['error']}")
