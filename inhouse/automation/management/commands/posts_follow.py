@@ -44,17 +44,16 @@ class Command(BaseCommand):
         driver.get(search_url)
 
         follow_count = 0
-        while follow_count < 10:  # Follow only 10 posts
+        while follow_count < 10: 
             try:
-                # Scroll down to load more posts
+
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 time.sleep(2)
 
-                # Find all follow buttons on the page and click them
                 follow_buttons = driver.find_elements(By.CLASS_NAME, "follow")
                 for button in follow_buttons:
                     button.click()
-                    time.sleep(4)  # Wait for the follow action to complete
+                    time.sleep(4)  
                     follow_count += 1
                     if follow_count >= 10:
                         break
