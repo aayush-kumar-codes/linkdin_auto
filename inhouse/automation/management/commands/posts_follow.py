@@ -5,7 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException
 import logging
 from django.core.management.base import BaseCommand
 
@@ -46,20 +46,18 @@ class Command(BaseCommand):
         follow_count = 0
         while follow_count < 10: 
             try:
-
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(2)
+                time.sleep(5)
 
                 follow_buttons = driver.find_elements(By.CLASS_NAME, "follow")
                 for button in follow_buttons:
-                    button.click()
-                    time.sleep(4)  
-                    follow_count += 1
-                    if follow_count >= 10:
-                        break
-
+                    try:
+                        button.click()
+                        time.sleep(5)
+                        follow_count += 1
+                        if follow_count >= 10:
+                            break
+                    except ElementClickInterceptedException:
+                        logging.warning("Follow button found but not clickable. Moving to the next button.")
             except NoSuchElementException:
                 logging.warning("Follow button not found. Moving to the next scroll.")
-            finally:
-                time.sleep(2)
-
