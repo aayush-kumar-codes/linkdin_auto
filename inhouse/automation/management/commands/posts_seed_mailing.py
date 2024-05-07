@@ -5,10 +5,13 @@ from dotenv import load_dotenv
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from automation.models import LinkedInJobs
+from inhouse.settings import EMAIL_HOST_USER
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from django.core.mail import send_mail
+
 import logging
 from django.core.management.base import BaseCommand
 
@@ -81,7 +84,6 @@ class Command(BaseCommand):
         post_content_element = driver.find_element(By.CLASS_NAME, "feed-shared-update-v2__description")
         linkedinprofile = driver.find_elements(By.XPATH, "//a[@class='app-aware-link  update-components-actor__image relative']")
         linkedinprofile_link = list(set([linkedin.get_attribute("href") for linkedin in linkedinprofile if linkedin.get_attribute("href")]))
-        linkedin_link = linkedinprofile_link[0]
         post_content = post_content_element.text
         cleaned_content = re.sub(r'#\w+', '', post_content)
         final_content = re.sub(r'hashtag', '', cleaned_content)
@@ -92,35 +94,61 @@ class Command(BaseCommand):
         string_list = [str(element) for element in skills]
         delimiter = ", "
         result_string = delimiter.join(string_list)
-        try:
-            linkedinjobs = LinkedInJobs.objects.get(urn_id=urn)
-        except LinkedInJobs.DoesNotExist:
+        if email is not None:
+            try:
+                linkedinjobs = LinkedInJobs.objects.get(urn_id=urn)
+            except LinkedInJobs.DoesNotExist:
+                linkedinjobs = None
+            if not linkedinjobs:
+                linkedinjobs, created = LinkedInJobs.objects.get_or_create(
+                                        email=email,
+                                        skills=result_string,
+                                        linkedin_profile_link=linkedinprofile_link[0],
+                                        post_profile=url,
+                                        post_content=content,
+                                        urn_id=urn
+                                    )
+
+            slack_token = os.getenv("SLACK_BOT_TOKEN")
+            client = WebClient(token=slack_token)
+
+            try:
+                response = client.chat_postMessage(
+                    channel=os.getenv("SLACK_CHANNEL"),
+                    text=f"Job Found E: {email} skills: {result_string}    FTE: full time  Remote: yes  Years: 10   Company: asiaselect.com.ph",
+                    user=os.getenv("USER")
+                )
+
+                response = client.chat_postMessage(
+                    channel=os.getenv("SLACK_CHANNEL"),
+                    text=content,
+                    thread_ts=response['ts'],
+                    user=os.getenv("USER")
+                )
+            except SlackApiError as e:
+                logging.error(f"Error posting to Slack: {e.response['error']}")       
+
+            EMAIL = """
+Dear ,
+
+I hope this email finds you well. I am writing to express my interest in the Ract Developer role at your esteemed organization.
+
+As a seasoned web developer with 5+ years of experience, I am well-versed in the skills and technologies required for this position, including AWS Lambda, Node.js, Kafka, serverless applications, and event-driven architectures. My expertise in these areas, combined with my proficiency in AWS services, microservices, Docker, and Kubernetes, makes me an ideal candidate for this role.
+
+I am currently a freelancer, but I am now looking for remote job opportunities that align with my skills and experience. I believe my background and passion for building robust, scalable, and efficient web applications would be a valuable asset to your team.
+
+Please find my resume attached: 
+
+I am excited about the prospect of discussing this opportunity further and demonstrating how I can contribute to the success of your organization.
+
+Thank you for your consideration.
+
+Rakesh
+            """
+            subject = 'Applying for the job'
+            message = EMAIL
+            email_from = EMAIL_HOST_USER
+            recipient_list = [email, ]
+            send_mail(subject, message, email_from, recipient_list)
+        else:
             linkedinjobs = None
-        if not linkedinjobs:
-            linkedinjobs, created = LinkedInJobs.objects.get_or_create(
-                                    email=email,
-                                    skills=result_string,
-                                    linkedin_profile_link=linkedinprofile_link[0],
-                                    post_profile=url,
-                                    post_content=content,
-                                    urn_id=urn
-                                )
-
-        slack_token = os.getenv("SLACK_BOT_TOKEN")
-        client = WebClient(token=slack_token)
-
-        try:
-            response = client.chat_postMessage(
-                channel=os.getenv("SLACK_CHANNEL"),
-                text=f"Job Found E: {email} skills: {result_string}    FTE: full time  Remote: yes  Years: 10   Company: asiaselect.com.ph",
-                user=os.getenv("USER")
-            )
-
-            response = client.chat_postMessage(
-                channel=os.getenv("SLACK_CHANNEL"),
-                text=content,
-                thread_ts=response['ts'],
-                user=os.getenv("USER")
-            )
-        except SlackApiError as e:
-            logging.error(f"Error posting to Slack: {e.response['error']}")
