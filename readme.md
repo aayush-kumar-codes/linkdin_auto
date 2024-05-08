@@ -32,10 +32,14 @@ pip install -r requirements.txt
 
 ### Usage
 
-### To run the script, use the following command:
+### To run the script, for visiting profiles on search basis:
 
-python manage.py posts_seed
+python scripts/profile_visits.py
 
-### To run the app, use the following command:
+### To run the app, for following profiles on search basis:
 
-python manage.py runserver
+python scripts/posts_follow.py
+
+### To run the app, for applying for the react remote jobs through mail:
+
+python scripts/posts_seed_mailing.py
