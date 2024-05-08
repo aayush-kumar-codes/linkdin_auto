@@ -23,21 +23,6 @@ conn = psycopg2.connect(database=os.getenv('NAME'),
 
 cur = conn.cursor()
 
-create_table_query = '''
-CREATE TABLE IF NOT EXISTS linkedin_jobs (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(254) NOT NULL,
-    skills TEXT,
-    linkedin_profile_link TEXT,
-    post_profile TEXT NOT NULL,
-    post_content TEXT NOT NULL,
-    urn_id TEXT UNIQUE
-);
-'''
-
-cur.execute(create_table_query)
-conn.commit()
-
 
 def login_to_linkedin(driver):
     driver.get("https://www.linkedin.com/login")
@@ -106,23 +91,16 @@ def post_content(url, driver, urn):
     delimiter = ", "
     result_string = delimiter.join(string_list)
     if email is not None:
-        try:
-            linkedinjobs = "SELECT id FROM linkedin_jobs WHERE urn_id = %s;"
-        except linkedinjobs:
-            linkedinjobs = None
-        if not linkedinjobs:
-            linkedinjobs_insert = '''
+        linkedinjobs_select_query = "SELECT id FROM linkedin_jobs WHERE urn_id = %s;"
+        cur.execute(linkedinjobs_select_query, (urn,))
+        row = cur.fetchone()
+        if row is None:
+            linkedinjobs_insert_query = '''
             INSERT INTO linkedin_jobs (email, skills, linkedin_profile_link, post_profile, post_content, urn_id)
             VALUES (%s, %s, %s, %s, %s, %s);
             '''
-            if email is not None:
-                cur.execute(linkedinjobs, (urn,))
-                row = cur.fetchone()
-                if row is None:
-                    cur.execute(linkedinjobs_insert, (email, result_string, linkedinprofile_link, url, content, urn))
-                    conn.commit()
-            cur.close()
-            conn.close()
+            cur.execute(linkedinjobs_insert_query, (email, result_string, linkedinprofile_link, url, content, urn))
+            conn.commit()
         slack_token = os.getenv("SLACK_BOT_TOKEN")
         client = WebClient(token=slack_token)
 

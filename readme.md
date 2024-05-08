@@ -32,6 +32,10 @@ pip install -r requirements.txt
 
 ### Usage
 
+### To run the script, for creating the schema in database:
+
+python scripts/create_schema.py
+
 ### To run the script, for visiting profiles on search basis:
 
 python scripts/profile_visits.py
