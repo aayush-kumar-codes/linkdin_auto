@@ -101,24 +101,24 @@ def post_content(url, driver, urn):
             '''
             cur.execute(linkedinjobs_insert_query, (email, result_string, linkedinprofile_link, url, content, urn))
             conn.commit()
-        # slack_token = os.getenv("SLACK_BOT_TOKEN")
-        # client = WebClient(token=slack_token)
+        slack_token = os.getenv("SLACK_BOT_TOKEN")
+        client = WebClient(token=slack_token)
 
-        # try:
-        #     response = client.chat_postMessage(
-        #         channel=os.getenv("SLACK_CHANNEL"),
-        #         text=f"Job Found E: {email} skills: {result_string}    FTE: full time  Remote: yes  Years: 10   Company: asiaselect.com.ph",
-        #         user=os.getenv("USER")
-        #     )
+        try:
+            response = client.chat_postMessage(
+                channel=os.getenv("SLACK_CHANNEL"),
+                text=f"Job Found E: {email} skills: {result_string}    FTE: full time  Remote: yes  Years: 10   Company: asiaselect.com.ph",
+                user=os.getenv("USER")
+            )
 
-        #     response = client.chat_postMessage(
-        #         channel=os.getenv("SLACK_CHANNEL"),
-        #         text=content,
-        #         thread_ts=response['ts'],
-        #         user=os.getenv("USER")
-        #     )
-        # except SlackApiError as e:
-        #     logging.error(f"Error posting to Slack: {e.response['error']}")
+            response = client.chat_postMessage(
+                channel=os.getenv("SLACK_CHANNEL"),
+                text=content,
+                thread_ts=response['ts'],
+                user=os.getenv("USER")
+            )
+        except SlackApiError as e:
+            logging.error(f"Error posting to Slack: {e.response['error']}")
 
         EMAIL = """
 Dear ,
