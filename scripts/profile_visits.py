@@ -62,7 +62,7 @@ def search_keyword_and_visit_profiles(driver, keyword):
                             driver.back()
                             WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.CLASS_NAME, "search-results-container")))
                 else:
-                    if next_count < 9:
+                    if next_count < 1:
                         try:
                             next_button = WebDriverWait(driver, 10).until(
                                 EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Next']"))
@@ -83,10 +83,14 @@ def search_keyword_and_visit_profiles(driver, keyword):
 
 
 def main():
-    keywords = ['python', 'react']
     with webdriver.Chrome() as driver:
         login_to_linkedin(driver)
-        for keyword in keywords:
+        keywords = os.getenv('PROFILE_VISIT_KEYWORDS')
+        if ',' in keywords:
+            for keyword in keywords.split(','):
+                search_keyword_and_visit_profiles(driver, keyword)
+        else:
+            keyword = keywords
             search_keyword_and_visit_profiles(driver, keyword)
 
 

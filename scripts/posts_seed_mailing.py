@@ -11,7 +11,6 @@ from selenium.webdriver.support import expected_conditions as EC
 import psycopg2
 import logging
 import smtplib
-from email.mime.text import MIMEText
 
 load_dotenv()
 
@@ -44,11 +43,11 @@ def login_to_linkedin(driver):
         "//input[@role='combobox']")))
 
 
-def scrape_linkedin_posts(driver):
-    search_url = "https://www.linkedin.com/search/results/content/?keywords=react%20remote%20jobs&origin=FACETED_SEARCH&searchId=e3dd1918-35dd-44ce-9371-bab3052f551c&sid=Xra&sortBy=%22date_posted%22"
+def scrape_linkedin_posts(driver, keyword):
+    search_url = f"https://www.linkedin.com/search/results/content/?keywords={keyword}&sortBy=%22date_posted%22"
     driver.get(search_url)
 
-    for _ in range(20):
+    for _ in range(int(os.getenv('scroll'))):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)
 
@@ -156,11 +155,20 @@ Rakesh
 def main():
     with webdriver.Chrome() as driver:
         login_to_linkedin(driver)
-        post_urns = scrape_linkedin_posts(driver)
-        for urn in post_urns:
-            link = f"https://www.linkedin.com/feed/update/{urn}/"
-            post_content(link, driver, urn)
-            time.sleep(5)
+        keywords = os.getenv('POSTS_SEED_KEYWORDS')
+        if ',' in keywords:
+            for keyword in keywords.split(','):
+                post_urns = scrape_linkedin_posts(driver, keyword)
+        else:
+            keyword = keywords
+            post_urns = scrape_linkedin_posts(driver, keyword)
+        keywords = os.getenv('POST_SEED_KEYWORDS')
+        for keyword in keywords:
+            scrape_linkedin_posts(driver, keyword)
+            for urn in post_urns:
+                link = f"https://www.linkedin.com/feed/update/{urn}/"
+                post_content(link, driver, urn)
+                time.sleep(5)
 
 
 if __name__ == "__main__":
