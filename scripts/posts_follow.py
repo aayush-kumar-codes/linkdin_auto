@@ -26,9 +26,12 @@ def login_to_linkedin(driver):
     login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
     login_button.click()
 
-    WebDriverWait(driver, 20).until(EC.visibility_of_element_located((
-        By.XPATH,
-        "//input[@role='combobox']")))
+    try:
+        # Increase wait time for the combobox to be visible
+        WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.XPATH, "//input[@role='combobox']")))
+    except TimeoutException as e:
+        print("TimeoutException occurred:", e)
+   
 
 
 
@@ -76,6 +79,7 @@ def withdraw_request(driver):
             if new_height == last_height:
                 break
     except NoSuchWindowException:
+        print("errror",str(e))
         logging.warning("Window closed unexpectedly. Terminating script.")
 
 
@@ -90,8 +94,10 @@ def follow_posts_while_scrolling(driver, keyword):
             time.sleep(5)
 
             follow_buttons = driver.find_elements(By.CLASS_NAME, "follow")
+            
             for button in follow_buttons:
                 try:
+                    
                     button.click()
                     time.sleep(5)
                     follow_count += 1
@@ -107,13 +113,15 @@ def main():
     with webdriver.Chrome() as driver:
         login_to_linkedin(driver)
         withdraw_request(driver)
-        # keywords = os.getenv('POSTS_FOLLOW_KEYWORDS')
-        # if ',' in keywords:
-        #     for keyword in keywords.split(','):
-        #         follow_posts_while_scrolling(driver, keyword)
-        # else:
-        #     keyword = keywords
-        #     follow_posts_while_scrolling(driver, keyword)
+        keywords = os.getenv('POSTS_FOLLOW_KEYWORDS')
+        
+        if ',' in keywords:
+            for keyword in keywords.split(','):
+                follow_posts_while_scrolling(driver, keyword)
+        else:
+            keyword = keywords
+            follow_posts_while_scrolling(driver, keyword)
+
 
 
 if __name__ == "__main__":
