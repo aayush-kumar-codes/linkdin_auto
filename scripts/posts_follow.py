@@ -7,7 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, StaleElementReferenceException, TimeoutException, NoSuchWindowException
 import logging
-
+from datetime import datetime
 load_dotenv()
 
 
@@ -57,9 +57,10 @@ def withdraw_request(driver):
                         # Try clicking the button, handle if click is intercepted
                         try:
                             button.click()
-                            time.sleep(2)  # Adding a small delay to allow the popup to appear
+                            
+                            time.sleep(1)  
                             WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CLASS_NAME, "artdeco-button--primary"))).click()
-                            time.sleep(5)  # Wait for the popup to close
+                            time.sleep(3)  # Wait for the popup to close
                         except ElementClickInterceptedException:
                             # If click is intercepted, log a warning and continue to the next button
                             logging.warning("Click intercepted. Skipping this button.")
@@ -79,29 +80,26 @@ def withdraw_request(driver):
             if new_height == last_height:
                 break
     except NoSuchWindowException:
-        print("errror",str(e))
         logging.warning("Window closed unexpectedly. Terminating script.")
 
 
-def follow_posts_while_scrolling(driver, keyword):
-    search_url = f"https://www.linkedin.com/search/results/content/?keywords={keyword}"
+def follow_posts_while_scrolling(driver, keyword, follow_count_limit):
+    search_url = f"https://www.linkedin.com/search/results/content/?keywords={keyword}&origin=CLUSTER_EXPANSION"
     driver.get(search_url)
 
     follow_count = 0
-    while follow_count < int(os.getenv('POST_FOLLOW_COUNT')):
+    while follow_count < follow_count_limit:
         try:
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(5)
 
             follow_buttons = driver.find_elements(By.CLASS_NAME, "follow")
-            
             for button in follow_buttons:
                 try:
-                    
                     button.click()
-                    time.sleep(5)
+                    time.sleep(3)
                     follow_count += 1
-                    if follow_count >= 10:
+                    if follow_count >= follow_count_limit:
                         break
                 except ElementClickInterceptedException:
                     logging.warning("Follow button found but not clickable. Moving to the next button.")
@@ -114,15 +112,24 @@ def main():
         login_to_linkedin(driver)
         withdraw_request(driver)
         keywords = os.getenv('POSTS_FOLLOW_KEYWORDS')
+       
+        keyword_list = keywords.split(',')
         
-        if ',' in keywords:
-            for keyword in keywords.split(','):
-                follow_posts_while_scrolling(driver, keyword)
-        else:
-            keyword = keywords
-            follow_posts_while_scrolling(driver, keyword)
+        # Number of people to follow per iteration
+        follow_per_iteration = os.getenv('POST_FOLLOW_COUNT')
+        waiting_time =int(os.getenv('WAITING_TIME'))
+        while True:
+            for keyword in keyword_list:
+               
+                follow_posts_while_scrolling(driver, keyword, int(follow_per_iteration))
+                current_time = datetime.now().strftime("%H:%M:%S")  # Format current time
+                print("now waiting for  min",waiting_time," min  => ", current_time)
+                time.sleep(3)
+
+            time.sleep(waiting_time) 
 
 
 
 if __name__ == "__main__":
     main()
+

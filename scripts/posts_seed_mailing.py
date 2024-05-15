@@ -38,7 +38,7 @@ def login_to_linkedin(driver):
     login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
     login_button.click()
 
-    WebDriverWait(driver, 20).until(EC.visibility_of_element_located((
+    WebDriverWait(driver, 60).until(EC.visibility_of_element_located((
         By.XPATH,
         "//input[@role='combobox']")))
 
@@ -46,8 +46,8 @@ def login_to_linkedin(driver):
 def scrape_linkedin_posts(driver, keyword):
     search_url = f"https://www.linkedin.com/search/results/content/?keywords={keyword}&sortBy=%22date_posted%22"
     driver.get(search_url)
-
-    for _ in range(int(os.getenv('scroll'))):
+    print(os.getenv('scroll'),"ffffffffffffffffffffffffffffffff")
+    for _ in range(10):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)
 
@@ -57,6 +57,7 @@ def scrape_linkedin_posts(driver, keyword):
 
 
 def extract_email(text):
+    print(text)
     email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     match = re.search(email_pattern, text)
     return match.group(0) if match else None
@@ -162,7 +163,7 @@ def main():
         else:
             keyword = keywords
             post_urns = scrape_linkedin_posts(driver, keyword)
-        keywords = os.getenv('POST_SEED_KEYWORDS')
+        keywords = "mysql"
         for keyword in keywords:
             scrape_linkedin_posts(driver, keyword)
             for urn in post_urns:
