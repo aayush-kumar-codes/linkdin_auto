@@ -46,7 +46,7 @@ def login_to_linkedin(driver):
 def scrape_linkedin_posts(driver, keyword):
     search_url = f"https://www.linkedin.com/search/results/content/?keywords={keyword}&sortBy=%22date_posted%22"
     driver.get(search_url)
-    print(os.getenv('scroll'),"ffffffffffffffffffffffffffffffff")
+  
     for _ in range(10):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)

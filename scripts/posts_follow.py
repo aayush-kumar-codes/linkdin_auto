@@ -50,7 +50,7 @@ def withdraw_request(driver):
             for button, duration in zipped:
                 try:
                     sent_duration = duration.text
-                    if sent_duration == "Sent today":
+                    if sent_duration == "Sent 1 month ago":
                         # Scroll to the button's position
                         driver.execute_script("arguments[0].scrollIntoView();", button)
                         time.sleep(1)  # Adding a small delay for scrolling
@@ -97,6 +97,7 @@ def follow_posts_while_scrolling(driver, keyword, follow_count_limit):
             for button in follow_buttons:
                 try:
                     button.click()
+                  
                     time.sleep(3)
                     follow_count += 1
                     if follow_count >= follow_count_limit:
@@ -120,12 +121,10 @@ def main():
         waiting_time =int(os.getenv('WAITING_TIME'))
         while True:
             for keyword in keyword_list:
-               
                 follow_posts_while_scrolling(driver, keyword, int(follow_per_iteration))
-                current_time = datetime.now().strftime("%H:%M:%S")  # Format current time
-                print("now waiting for  min",waiting_time," min  => ", current_time)
                 time.sleep(3)
-
+            current_time = datetime.now().strftime("%H:%M:%S")  # Format current time
+            print("now waiting for ",waiting_time," sec and current time is =>  ", current_time)
             time.sleep(waiting_time) 
 
 
